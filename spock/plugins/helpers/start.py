@@ -9,7 +9,10 @@ a bot.
 from spock.mcp.mcpacket import Packet
 
 from spock.mcp import mcpacket, mcdata
+from spock.utils import pl_announce
 
+
+@pl_announce('Start')
 class StartPlugin:
     def __init__(self, ploader, settings):
         self.event = ploader.requires('Event')
@@ -18,14 +21,17 @@ class StartPlugin:
         self.net = ploader.requires('Net')
         self.auth = ploader.requires('Auth')
 
-        self.event.reg_event_handler(mcdata.packet_idents['PLAY<Spawn Position'], self.initial_spawn)
+        ploader.provides('Start', self)
 
-        setattr(self.client, 'start', self.start)
+    def start_client(self, host=None, port=None):
+        if host is None:
+            host = self.settings['host']
+        if port is None:
+            port = self.settings['port']
 
-    def start(self, host = 'localhost', port = 25565):
         if 'error' not in self.auth.start_session(
-            self.settings['mc_username'],
-            self.settings['mc_password']
+            self.settings['username'],
+            self.settings['password']
         ):
             self.net.connect(host, port)
             self.handshake()
@@ -48,14 +54,3 @@ class StartPlugin:
             ident='LOGIN>Login Start',
             data = {'name': self.auth.username},
         ))
-
-    # Initial spawn only
-    def initial_spawn(self, name, event):
-        self.event.unreg_event_handler(mcdata.packet_idents['PLAY<Spawn Position'], self.initial_spawn)
-        self.net.push(Packet(ident='PLAY>Client Settings', data={'locale': 'en_US',
-                                                                 'view_distance': 12,
-                                                                 'chat_flags': 0,
-                                                                 'chat_colors': 1,
-                                                                 'difficulty': 0,
-                                                                 'show_cape': 1}))
-        self.net.push(Packet(ident='PLAY>Client Status', data={'action': 0}))

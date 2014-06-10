@@ -86,6 +86,7 @@ class PollSocket(SelectSocket):
 
 class NetCore:
     trace = False
+    name = None
 
     def __init__(self, sock, event):
         self.sock = sock
@@ -111,10 +112,11 @@ class NetCore:
             print("!!! Changing to state", mcdata.state_names[state])
         self.proto_state = state
 
-    def push(self, packet):
-        if self.trace:
-            print(repr(packet))
+    def trace_packet(self, packet):
+        if self.trace and not packet.silent:
+            print(self.name, repr(packet))
 
+    def push(self, packet):
         if packet.state != self.proto_state:
             raise ValueError("Cannot send packet {0} while in {1} state".format(repr(packet), mcdata.state_names[self.proto_state]))
         if packet.direction != mcdata.CLIENT_TO_SERVER:
@@ -124,6 +126,8 @@ class NetCore:
         self.sbuff += (self.cipher.encrypt(data) if self.encrypted else data)
         self.event.emit(packet.ident(), packet)
         self.sock.sending = True
+
+        self.trace_packet(packet)
 
     def read_packet(self, data = b''):
         self.rbuff.append(self.cipher.decrypt(data) if self.encrypted else data)
@@ -138,8 +142,7 @@ class NetCore:
                 self.rbuff.revert()
                 break
 
-            if self.trace:
-                print(repr(packet))
+            self.trace_packet(packet)
 
             self.event.emit(packet.ident(), packet)
 
@@ -168,8 +171,10 @@ class NetPlugin:
         self.bufsize = settings['bufsize']
         self.sock_quit = settings['sock_quit']
         self.event = ploader.requires('Event')
+
         self.net = NetCore(self.sock, self.event)
         self.net.trace = settings['packet_trace']
+        self.net.name = settings['username']
         ploader.provides('Net', self.net)
 
         ploader.reg_event_handler('tick', self.tick)
@@ -204,7 +209,7 @@ class NetPlugin:
     def handleSEND(self, name, event):
         try:
             sent = self.sock.send(self.net.sbuff)
-            #print('write:', sent)
+            # print('write:', sent)
             self.net.sbuff = self.net.sbuff[sent:]
         except socket.error as error:
             print("Socket error while sending:", error)

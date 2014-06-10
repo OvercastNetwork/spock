@@ -9,8 +9,6 @@ class EventCore:
         self.event_handlers = {}
 
     def event_loop(self):
-        signal.signal(signal.SIGINT, self.kill)
-        signal.signal(signal.SIGTERM, self.kill)
         while not self.kill_event:
             self.emit('tick')
         self.emit('kill')
@@ -32,7 +30,7 @@ class EventCore:
                 else copy.deepcopy(data)
             ))
 
-    def kill(self, *args):
+    def kill(self):
         self.kill_event = True
 
 @pl_announce('Event')

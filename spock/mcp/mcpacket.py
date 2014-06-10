@@ -18,7 +18,7 @@ class Packet(object):
     state = None
     direction = None
 
-    def __init__(self, ident=(mcdata.HANDSHAKE_STATE, mcdata.CLIENT_TO_SERVER, 0x00), data=None):
+    def __init__(self, ident=(mcdata.HANDSHAKE_STATE, mcdata.CLIENT_TO_SERVER, 0x00), data=None, silent=False):
         if isinstance(ident, str):
             ident = mcdata.packet_idents[ident]
 
@@ -29,6 +29,8 @@ class Packet(object):
 
         self.__hash_ident()
         self.data = data if data else {}
+
+        self.silent = silent
 
     def __hash_ident(self):
         self.__hashed_ident = (self.state, self.direction, self.id)
@@ -86,7 +88,9 @@ class Packet(object):
         #Extension
         if self.__hashed_ident in hashed_extensions:
             o += hashed_extensions[self.__hashed_ident].encode_extra(self)
-        return datautils.pack(MC_VARINT, len(o)) + o
+
+        self.length = len(o)
+        return datautils.pack(MC_VARINT, self.length) + o
 
     def __repr__(self):
         if self.direction == mcdata.CLIENT_TO_SERVER:

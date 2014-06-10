@@ -95,8 +95,9 @@ class WorldTick:
 @pl_announce('Timers')
 class TimerPlugin:
     def __init__(self, ploader, settings):
-        self.world = ploader.requires('World')
-        if not self.world:
+        if ploader.available('World'):
+            self.world = ploader.requires('World')
+        else:
             self.world = WorldTick()
             ploader.reg_event_handler(
                 (mcdata.PLAY_STATE, mcdata.SERVER_TO_CLIENT, 0x03),

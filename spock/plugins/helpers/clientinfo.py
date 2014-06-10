@@ -1,5 +1,8 @@
+from spock.mcp.mcpacket import Packet
 from spock.mcp import mcdata
 from spock.utils import pl_announce
+
+HEAD_HEIGHT = 1.62
 
 class ClientInfo:
     def __init__(self):
@@ -23,14 +26,18 @@ class ClientInfo:
         }
         self.position = {
             'x': 0,
-            'y': 0,
+            'feet': 0,
             'z': 0,
-            'stance': 0,
+            'head': HEAD_HEIGHT,
             'yaw': 0,
             'pitch': 0,
             'on_ground': False,
         }
         self.player_list = {}
+
+    def update_stance(self):
+        self.position['feet'] = self.position['y']
+        self.position['head'] = self.position['y'] + HEAD_HEIGHT
 
     def reset(self):
         self.__init__()
@@ -41,6 +48,8 @@ class ClientInfoPlugin:
     def __init__(self, ploader, settings):
         self.event = ploader.requires('Event')
         self.emit = self.event.emit
+
+        self.net = ploader.requires('Net')
 
         self.event.reg_event_handler(mcdata.packet_idents['PLAY<Join Game'], self.handle_join_game)
         self.event.reg_event_handler(mcdata.packet_idents['PLAY<Spawn Position'], self.handle_spawn_position)
@@ -70,8 +79,17 @@ class ClientInfoPlugin:
 
     #Position Update Packets - Update client Position state
     def handle_position_update(self, name, packet):
-        for key, value in packet.data.items():
-            self.client_info.position[key] = value
+        self.client_info.position['x'] =         packet.data['x']
+        self.client_info.position['y'] =         packet.data['y'] - HEAD_HEIGHT
+        self.client_info.position['z'] =         packet.data['z']
+        self.client_info.position['yaw'] =       packet.data['yaw']
+        self.client_info.position['pitch'] =     packet.data['pitch']
+        self.client_info.position['on_ground'] = packet.data['on_ground']
+
+        self.client_info.update_stance()
+
+        self.net.push(Packet(ident='PLAY>Player Position and Look', data=self.client_info.position))
+
         self.emit('cl_position_update', self.client_info.position)
 
     def handle_disconnect(self, name, packet):

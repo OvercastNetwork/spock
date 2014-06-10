@@ -752,8 +752,8 @@ packet_structs = {
             #Player Position
             0x04: (
                 (MC_DOUBLE, 'x'),
-                (MC_DOUBLE, 'stance'),
-                (MC_DOUBLE, 'y'),
+                (MC_DOUBLE, 'feet'),
+                (MC_DOUBLE, 'head'),
                 (MC_DOUBLE, 'z'),
                 (MC_BOOL  , 'on_ground'),
             ),
@@ -766,8 +766,8 @@ packet_structs = {
             #Player Position and Look
             0x06: (
                 (MC_DOUBLE, 'x'),
-                (MC_DOUBLE, 'stance'),
-                (MC_DOUBLE, 'y'),
+                (MC_DOUBLE, 'feet'),
+                (MC_DOUBLE, 'head'),
                 (MC_DOUBLE, 'z'),
                 (MC_FLOAT, 'yaw'),
                 (MC_FLOAT, 'pitch'),
